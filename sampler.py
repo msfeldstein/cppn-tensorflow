@@ -37,8 +37,8 @@ from images2vid import writeVideo
 pylab.rcParams['figure.figsize'] = (10.0, 10.0)
 
 class Sampler():
-  def __init__(self, z_dim = 8, c_dim = 1, scale = 10.0, net_size = 32):
-    self.cppn = CPPN(z_dim = z_dim, c_dim = c_dim, scale = scale, net_size = net_size)
+  def __init__(self, z_dim = 8, c_dim = 1, scale = 10.0, net_size = 3, num_tan_layers = 3):
+    self.cppn = CPPN(z_dim = z_dim, c_dim = c_dim, scale = scale, net_size = net_size, num_tan_layers = num_tan_layers)
     self.z = self.generate_z() # saves most recent z here, in case we find a nice image and want the z-vec
   def reinit(self):
     self.cppn.reinit()

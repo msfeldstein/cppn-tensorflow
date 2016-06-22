@@ -12,7 +12,7 @@ import tensorflow as tf
 from ops import *
 
 class CPPN():
-  def __init__(self, batch_size=1, z_dim = 32, c_dim = 1, scale = 8.0, net_size = 32):
+  def __init__(self, batch_size=1, z_dim = 4, c_dim = 1, scale = 8.0, net_size = 32, num_tan_layers = 3):
     """
 
     Args:
@@ -32,6 +32,7 @@ class CPPN():
     self.scale = scale
     self.c_dim = c_dim
     self.z_dim = z_dim
+    self.num_tan_layers = num_tan_layers
 
     # tf Graph batch of image (batch_size, height, width, depth)
     self.batch = tf.placeholder(tf.float32, [batch_size, x_dim, y_dim, c_dim])
@@ -51,6 +52,10 @@ class CPPN():
     # builds the generator network
     self.G = self.generator(x_dim = self.x_dim, y_dim = self.y_dim)
 
+    self.init()
+    
+  def regen(self):
+    self.G = self.generator(x_dim = self.x_dim, y_dim = self.y_dim)
     self.init()
 
   def init(self):
@@ -80,7 +85,7 @@ class CPPN():
     r_mat = np.tile(r_mat.flatten(), self.batch_size).reshape(self.batch_size, n_points, 1)
     return x_mat, y_mat, r_mat
 
-  def generator(self, x_dim, y_dim, reuse = False):
+  def generator(self, x_dim, y_dim, reuse = True):
 
     if reuse:
         tf.get_variable_scope().reuse_variables()
@@ -110,56 +115,52 @@ class CPPN():
     ###
     ### Example: 3 layers of tanh() layers, with net_size = 32 activations/layer
     ###
-    #'''
+
     H = tf.nn.tanh(U)
-    for i in range(3):
+    for i in range(self.num_tan_layers):
       H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_'+str(i)))
     output = tf.sigmoid(fully_connected(H, self.c_dim, 'g_final'))
-    #'''
+
 
     ###
     ### Similar to example above, but instead the output is
     ### a weird function rather than just the sigmoid
-    '''
-    H = tf.nn.tanh(U)
-    for i in range(3):
-      H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_'+str(i)))
-    output = tf.sqrt(1.0-tf.abs(tf.tanh(fully_connected(H, self.c_dim, 'g_final'))))
-    '''
+    # 
+    # H = tf.nn.tanh(U)
+    # for i in range(6):
+    #   H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_'+str(i)))
+    # output = tf.sqrt(1.0-tf.abs(tf.tanh(fully_connected(H, self.c_dim, 'g_final'))))
 
     ###
     ### Example: mixing softplus and tanh layers, with net_size = 32 activations/layer
     ###
-    '''
-    H = tf.nn.tanh(U)
-    H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_1'))
-    H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_2'))
-    H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_2'))
-    H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_2'))
-    H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_2'))
-    output = tf.sigmoid(fully_connected(H, self.c_dim, 'g_final'))
-    '''
+    # 
+    # H = tf.nn.tanh(U)
+    # H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_1'))
+    # H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_2'))
+    # H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_2'))
+    # H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_2'))
+    # H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_2'))
+    # output = tf.sigmoid(fully_connected(H, self.c_dim, 'g_final'))
 
     ###
     ### Example: mixing sinusoids, tanh and multiple softplus layers
     ###
-    '''
-    H = tf.nn.tanh(U)
-    H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_1'))
-    H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_2'))
-    H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_2'))
-    output = 0.5 * tf.sin(fully_connected(H, self.c_dim, 'g_final')) + 0.5
-    '''
+    # H = tf.nn.tanh(U)
+    # H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_1'))
+    # H = tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_2'))
+    # H = tf.nn.softplus(fully_connected(H, net_size, 'g_softplus_2'))
+    # output = 0.5 * tf.sin(fully_connected(H, self.c_dim, 'g_final')) + 0.5
+    # 
 
     ###
     ### Example: residual network of 4 tanh() layers
     ###
-    '''
-    H = tf.nn.tanh(U)
-    for i in range(3):
-      H = H+tf.nn.tanh(fully_connected(H, net_size, g_tanh_'+str(i)))
-    output = tf.sigmoid(fully_connected(H, self.c_dim, 'g_final'))
-    '''
+    # H = tf.nn.tanh(U)
+    # for i in range(3):
+    #   H = H+tf.nn.tanh(fully_connected(H, net_size, 'g_tanh_'+str(i)))
+    # output = tf.sigmoid(fully_connected(H, self.c_dim, 'g_final'))
+
 
     '''
     The final hidden later is pass thru a fully connected sigmoid later, so outputs -> (0, 1)
